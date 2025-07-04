@@ -41,3 +41,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Generator
+*.g.dart
+*.mocks.dart
+
+# Report test coverage
+/coverage/
+
+# iOS
+/ios/Podfile.lock
+/ios/build/
