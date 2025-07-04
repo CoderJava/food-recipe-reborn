@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_recipe/core/error/failure.dart';
+import 'package:food_recipe/feature/data/model/category/category_response.dart';
 import 'package:food_recipe/feature/data/model/meal/meal_response.dart';
 import 'package:food_recipe/feature/data/repository/the_meal_db/the_meal_db_repository_impl.dart';
 import 'package:mockito/mockito.dart';
@@ -184,5 +185,92 @@ void main() {
     );
 
     testDisconnected(() => repository.getRandomMeal());
+  });
+
+  group('getCategory', () {
+    final tResponse = CategoryResponse.fromJson(
+      json.decode(
+        fixture('category_response.json'),
+      ),
+    );
+
+    test(
+      'pastikan mengembalikan objek model ketika RemoteDataSource berhasil menerima '
+      'respon sukses dari endpoint',
+      () async {
+        // arrange
+        setUpMockNetworkConnected();
+        when(mockRemoteDataSource.getCategory()).thenAnswer((_) async => tResponse);
+
+        // act
+        final result = await repository.getCategory();
+
+        // assert
+        verify(mockRemoteDataSource.getCategory());
+        expect(result.response, tResponse);
+      },
+    );
+
+    test(
+      'pastikan mengembalikan objek ServerFailure ketika RemoteDataSource berhasil menerima '
+      'respon timeout dari endpoint',
+      () async {
+        // arrange
+        setUpMockNetworkConnected();
+        when(mockRemoteDataSource.getCategory())
+            .thenThrow(DioException(requestOptions: tRequestOptions, message: 'testError'));
+
+        // act
+        final result = await repository.getCategory();
+
+        // assert
+        verify(mockRemoteDataSource.getCategory());
+        expect(result.failure, ServerFailure('testError'));
+      },
+    );
+
+    test(
+      'pastikan mengembalikan objek ServerFailure ketika RemoteDataSource menerima respon kegagaln '
+      'dari endpoint',
+      () async {
+        // arrange
+        setUpMockNetworkConnected();
+        when(mockRemoteDataSource.getCategory()).thenThrow(
+          DioException(
+            requestOptions: tRequestOptions,
+            message: 'testError',
+            response: Response(
+              requestOptions: tRequestOptions,
+              data: {
+                'title': 'testTitleError',
+                'message': 'testMessageError',
+              },
+              statusCode: 400,
+            ),
+          ),
+        );
+
+        // act
+        final result = await repository.getCategory();
+
+        // assert
+        verify(mockRemoteDataSource.getCategory());
+        expect(result.failure, ServerFailure('testError'));
+      },
+    );
+
+    testServerFailureString(
+      () => mockRemoteDataSource.getCategory(),
+      () => repository.getCategory(),
+      () => mockRemoteDataSource.getCategory(),
+    );
+
+    testParsingFailure(
+      () => mockRemoteDataSource.getCategory(),
+      () => repository.getCategory(),
+      () => mockRemoteDataSource.getCategory(),
+    );
+
+    testDisconnected(() => repository.getCategory());
   });
 }
